@@ -12,6 +12,7 @@ namespace InfTehTest.ViewModel
         public int Id { get; set; }
         public string FolderName { get; set; }
         public ObservableCollection<FolderFileViewModel> Files { get; set; }
+        public ObservableCollection<FolderViewModel> Folders { get; set; }
         public int? ParentFolderId { get; set; }
         public string Icon { get { return "\\folder.png"; } }
     }

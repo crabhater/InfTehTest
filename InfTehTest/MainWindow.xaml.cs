@@ -1,4 +1,6 @@
-﻿using InfTehTest.ViewModel;
+﻿using InfTehTest.InterfacesLib;
+using InfTehTest.ViewModel;
+using InfTehTest.WebContext;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,9 +20,11 @@ namespace InfTehTest
     public partial class MainWindow : Window
     {
         private MainViewModel _viewModel;
+
         public MainWindow()
         {
             InitializeComponent();
+            _viewModel = DataContext as MainViewModel;
         }
 
         private void TreeViewItem_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
