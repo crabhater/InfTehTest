@@ -19,20 +19,22 @@ namespace InfTehTest
     /// </summary>
     public partial class MainWindow : Window
     {
-        private MainViewModel _viewModel;
+        private readonly MainViewModel _viewModel;
 
-        public MainWindow()
+        public MainWindow(MainViewModel viewModel)
         {
             InitializeComponent();
-            _viewModel = DataContext as MainViewModel;
+            _viewModel = viewModel;
+            DataContext = _viewModel;
         }
 
-        private void TreeViewItem_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
         {
-            if (sender is TreeViewItem item && item.DataContext is FolderFileViewModel file)
+            if (sender is TreeViewItem item && item.DataContext is FolderViewModel folder)
             {
-                _viewModel.OpenFile(file);
+                folder.LoadSubFoldersCommand.Execute(null);
             }
         }
+
     }
 }

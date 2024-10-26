@@ -12,6 +12,7 @@ namespace InfTehTest.InterfacesLib
         Task<List<FolderViewModel>> GetFoldersAsync(int parentFolderId);
         Task<List<FolderFileViewModel>> GetFilesAsync(int folderId);
         Task<FolderFileViewModel> GetFileContentAsync(int fileId);
+        Task<FolderViewModel> GetFolderContentAsync(int folderId);
 
     }
 }

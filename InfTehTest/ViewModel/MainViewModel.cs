@@ -15,9 +15,9 @@ namespace InfTehTest.ViewModel
 {
     public class MainViewModel : INotifyPropertyChanged
     {
-        private readonly IApiService _apiService;
-        private ObservableCollection<FolderViewModel> _folders;
-        public ObservableCollection<FolderViewModel> Folders { get { return _folders; } set { _folders = value; OnPropertyChanged(); } }
+        private readonly ApiService _apiService;
+
+        public ObservableCollection<FolderViewModel> Folders { get; set; }
         public ObservableCollection<FolderFileViewModel> OpenTabs { get; set; }
 
         private FolderFileViewModel _selectedFile;
@@ -38,20 +38,12 @@ namespace InfTehTest.ViewModel
             LoadDataAsync();
             OpenTabs = new ObservableCollection<FolderFileViewModel>();
         }
+
         private async Task LoadDataAsync()
         {
-            var folders = await _apiService.GetFoldersAsync(2); //TODO проброс id из вьюшки 
-            Folders = new ObservableCollection<FolderViewModel>(folders);
+            var rootFolder = await _apiService.GetFolderContentAsync(1); // Замените на нужный id
+            Folders = new ObservableCollection<FolderViewModel> { rootFolder };
         }
-
-        public async void OpenFolder(FolderViewModel folder)
-        {
-            if (folder != null)
-            {
-                var folders = await _apiService.GetFoldersAsync(folder.Id);
-                Folders = new ObservableCollection<FolderViewModel>(folders);
-            }
-        } 
 
         public async void OpenFile(FolderFileViewModel file)
         {

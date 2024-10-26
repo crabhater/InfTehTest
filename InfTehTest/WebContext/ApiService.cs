@@ -21,19 +21,11 @@ namespace InfTehTest.WebContext
             _httpClient = httpClient;
         }
 
-        public async Task<List<FolderViewModel>> GetFoldersAsync(int folderId)
+        public async Task<FolderViewModel> GetFolderContentAsync(int folderId)
         {
-            //var response = await _httpClient.GetStringAsync($"api/files/folders?parentFolderId={parentFolderId}");
             var endPoint = $"api/Folder/GetFolderContent/{folderId}";
             var response = await SendRequestAsync(HttpMethod.Get, endPoint, null, null);
-            return JsonConvert.DeserializeObject<List<FolderViewModel>>(response);
-        }
-
-        public async Task<List<FolderFileViewModel>> GetFilesAsync(int folderId)
-        {
-            var endPoint =  $"api/folder/GetFolderContent/{folderId}";
-            var response = await SendRequestAsync(HttpMethod.Get, endPoint, null, null);
-            return JsonConvert.DeserializeObject<List<FolderFileViewModel>>(response);
+            return JsonConvert.DeserializeObject<FolderViewModel>(response);
         }
 
         public async Task<FolderFileViewModel> GetFileContentAsync(int fileId)
@@ -43,8 +35,7 @@ namespace InfTehTest.WebContext
             return JsonConvert.DeserializeObject<FolderFileViewModel>(response);
         }
 
-
-        public async Task<string> SendRequestAsync(HttpMethod method, string url, string content, Dictionary<string, string> headers)
+        private async Task<string> SendRequestAsync(HttpMethod method, string url, string content, Dictionary<string, string> headers)
         {
             string body = "";
             var request = new HttpRequestMessage
@@ -65,23 +56,27 @@ namespace InfTehTest.WebContext
             {
                 request.Content = new StringContent(content)
                 {
-                    Headers =
-                    {
-                        ContentType = new MediaTypeHeaderValue("application/json")
-                    }
+                    Headers = { ContentType = new MediaTypeHeaderValue("application/json") }
                 };
             }
 
-            //client.Timeout = TimeSpan.FromMinutes(10); //Увеличение таймаута соединения для 
-
             using (var response = await _httpClient.SendAsync(request))
             {
-                //response.EnsureSuccessStatusCode();
                 body = await response.Content.ReadAsStringAsync();
             }
 
-
             return body;
         }
+
+        public Task<List<FolderViewModel>> GetFoldersAsync(int parentFolderId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<FolderFileViewModel>> GetFilesAsync(int folderId)
+        {
+            throw new NotImplementedException();
+        }
     }
+
 }
