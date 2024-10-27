@@ -21,20 +21,33 @@ namespace InfTehTest
     {
         private readonly MainViewModel _viewModel;
 
-        public MainWindow(MainViewModel viewModel)
+        public MainWindow()//MainViewModel viewModel)
         {
             InitializeComponent();
-            _viewModel = viewModel;
-            DataContext = _viewModel;
+            DataContext = new MainViewModel();
+            _viewModel = DataContext as MainViewModel;
+            //DataContext = _viewModel;
         }
 
-        private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
+        private void TreeViewItem_MouseDoubleClick(object sender, RoutedEventArgs e)
         {
-            if (sender is TreeViewItem item && item.DataContext is FolderViewModel folder)
+            var originalSource = e.OriginalSource as FrameworkElement;
+            if (originalSource?.DataContext == null || !originalSource.DataContext.Equals(((TreeViewItem)sender).DataContext))
+                return;
+
+            if (sender is TreeViewItem item && item.DataContext is TreeViewVM tvvm)
             {
-                folder.LoadSubFoldersCommand.Execute(null);
+                _viewModel.OpenFolder(tvvm);
             }
         }
+
+        //private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
+        //{
+        //    if (sender is TreeViewItem item && item.DataContext is FolderViewModel folder)
+        //    {
+        //        folder.LoadSubFoldersCommand.Execute(null);
+        //    }
+        //}
 
     }
 }

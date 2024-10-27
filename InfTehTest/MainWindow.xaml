@@ -6,37 +6,42 @@
         xmlns:local="clr-namespace:InfTehTest.ViewModel" d:DataContext="{d:DesignInstance Type=local:MainViewModel}"
         mc:Ignorable="d"
         Title="Explorer" Height="450" Width="800">
-    
-    <Grid>
+   
+
+
+        <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <TreeView Grid.Column="0" Margin="10" ItemsSource="{Binding Folders}">
-            <TreeView.Resources>
-                <HierarchicalDataTemplate DataType="{x:Type local:FolderViewModel}" ItemsSource="{Binding Folders}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0">
+            <Button Content="Создать папку" Margin="5,5,0,0"/>
+            <Button Content="Удалить папку" Margin="5,5,0,0"/>
+            <Button Content="Загрузить файл" Margin="5,5,0,0" Command="{Binding UploadFileCommand}"/>
+            <Button Content="Скачать файл" Margin="5,5,0,0"/>
+            <Button Content="Удалить файл" Margin="5,5,0,0"/>
+            <Button Content="Переименовать" Margin="5,5,0,0"/>
+        </StackPanel>
+        <TreeView Grid.Column="0" Grid.Row="1" Margin="10" ItemsSource="{Binding Folders}">
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate DataType="x:Type model:TreeViewVM" ItemsSource="{Binding  Child}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="{Binding Icon}" Width="16" Height="16" Margin="5,0,5,0"/>
-                        <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" />
+                        <Image Source="{Binding Icon}" Height="20" Width="20"/>
+                        <TextBlock Text="{Binding Name}" ToolTip="{Binding Description}"/>
                     </StackPanel>
-                    <HierarchicalDataTemplate.ItemTemplate>
-                        <HierarchicalDataTemplate ItemsSource="{Binding Files}">
-                            <StackPanel Orientation="Horizontal">
-                                <Image Source="{Binding Icon}" Width="16" Height="16" Margin="5,0,5,0"/>
-                                <TextBlock Text="{Binding Name}" ToolTip="{Binding Description}" />
-                            </StackPanel>
-                        </HierarchicalDataTemplate>
-                    </HierarchicalDataTemplate.ItemTemplate>
                 </HierarchicalDataTemplate>
-            </TreeView.Resources>
+            </TreeView.ItemTemplate>
             <TreeView.ItemContainerStyle>
                 <Style TargetType="TreeViewItem">
-                    <Setter Property="IsExpanded" Value="{Binding Path=HasDummyChild, Mode=OneWayToSource}" />
-                    <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                    <EventSetter Event="MouseDoubleClick" Handler="TreeViewItem_MouseDoubleClick"/>
                 </Style>
             </TreeView.ItemContainerStyle>
         </TreeView>
-        <TabControl Grid.Column="1" Margin="10" ItemsSource="{Binding OpenTabs}" SelectedItem="{Binding SelectedFile}">
+        <TabControl Grid.Column="1" Grid.Row="1" Margin="10" ItemsSource="{Binding OpenTabs}" SelectedItem="{Binding SelectedFile}">
             <TabControl.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Name}"/>
@@ -47,6 +52,7 @@
                     <TextBox Text="{Binding Content}" Margin="5"/>
                 </DataTemplate>
             </TabControl.ContentTemplate>
+            
         </TabControl>
     </Grid>
 </Window>
