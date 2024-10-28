@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 
 namespace InfTehTest.Command
@@ -19,7 +20,10 @@ namespace InfTehTest.Command
         }
 
         public bool CanExecute(object parameter) => _canExecute == null || _canExecute();
-        public void  Execute(object parameter) => _execute();
+        public void Execute(object parameter)
+        {
+            _execute();
+        } 
         public event EventHandler CanExecuteChanged;
 
         public void RaiseCanExecuteChanged()

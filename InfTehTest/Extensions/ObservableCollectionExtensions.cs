@@ -14,18 +14,12 @@ namespace InfTehTest.Extensions
         {
             return await viewModels.CheckChildsAndDoAsync(e => e.TypeId == viewModel.TypeId && e.Id == e.Id, action);
         }
-        public static async Task<bool> FindAndRemoveAsync(this ObservableCollection<TreeViewVM> viewModels, TreeViewVM viewModel)
-        {
-            return await viewModels.CheckChildsAndDoAsync(
-                e => e.FolderId == viewModel.FolderId && e.TypeId == viewModel.TypeId && e.Id == viewModel.Id,
-                vm => viewModels.Remove(vm));
-        }
 
         private static async Task<bool> CheckChildsAndDoAsync(this ObservableCollection<TreeViewVM> viewModels, Func<TreeViewVM, bool> predicate, Action<TreeViewVM> action)
         {
             if (viewModels != null && viewModels.Count > 0)
             {
-                foreach (var vm in viewModels.ToList())
+                foreach (var vm in viewModels)
                 {
                     if (predicate(vm))
                     {
@@ -35,10 +29,7 @@ namespace InfTehTest.Extensions
                     else
                     {
                         var result = await vm.Child.CheckChildsAndDoAsync(predicate, action);
-                        if (result)
-                        {
-                            return true;
-                        }
+                        return result;
                     }
                 }
             }

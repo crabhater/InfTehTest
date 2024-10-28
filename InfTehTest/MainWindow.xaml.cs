@@ -41,6 +41,30 @@ namespace InfTehTest
             }
         }
 
+        private void TreeViewItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var originalSource = e.OriginalSource as FrameworkElement;
+            if (originalSource?.DataContext == null || !originalSource.DataContext.Equals(((TreeViewItem)sender).DataContext))
+                return;
+
+            if (sender is TreeViewItem item && item.DataContext is TreeViewVM tvvm)
+            {
+                _viewModel.SelectedFile = tvvm;
+            }
+        }
+
+        private void TreeViewItem_Selected(object sender, RoutedEventArgs e)
+        {
+            var originalSource = e.OriginalSource as FrameworkElement;
+            if (originalSource?.DataContext == null || !originalSource.DataContext.Equals(((TreeViewItem)sender).DataContext))
+                return;
+
+            if (sender is TreeViewItem item && item.DataContext is TreeViewVM tvvm)
+            {
+                _viewModel.SelectedFile = tvvm;
+            }
+        }
+
         //private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
         //{
         //    if (sender is TreeViewItem item && item.DataContext is FolderViewModel folder)

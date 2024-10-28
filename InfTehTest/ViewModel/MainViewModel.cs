@@ -13,6 +13,7 @@ using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 
 namespace InfTehTest.ViewModel
@@ -68,15 +69,16 @@ namespace InfTehTest.ViewModel
                         {
                             FolderId = folderId,
                             Name = "Новая папка",
-                            TypeId = 0
+                            TypeId = 0,
+                            Icon = "\\folder.png"
                         };
+                        await _apiService.AddFolderAsync(newFolder);
 
                         await Folders.FindAndDoActionAsync(curFolder, (e =>
                         {
-                            e.Child.Add(newFolder); //TODO проверить работает вообще или нет
+                            OpenFolder(e);
                         }));
                         
-                        await _apiService.AddFolderAsync((FolderViewModel)newFolder);
                     }));
             }
         }
@@ -101,12 +103,45 @@ namespace InfTehTest.ViewModel
                             TypeId = 0
                         };
 
-                        await Folders.FindAndRemoveAsync(curFolder);
                         await _apiService.DeleteFolderAsync(folderId);
-                        Folders.Remove(SelectedFile);
+                        await Folders.FindAndDoActionAsync(curFolder, e =>
+                        {
+                            OpenFolder(e);
+                        });
                     }));
             }
         }
+
+        private RelayCommand _removeFileCommand;
+        public RelayCommand RemoveFileCommand
+        {
+            get
+            {
+                return _removeFileCommand ??
+                    (_removeFileCommand = new RelayCommand(async () =>
+                    {
+                        int folderId;
+                        switch (SelectedFile.TypeId)
+                        {
+                            case 0: return;
+                            default: folderId = SelectedFile.FolderId; break;
+                        }
+
+                        var curFolder = new TreeViewVM
+                        {
+                            Id = folderId,
+                            TypeId = 0
+                        };
+
+                        await _apiService.DeleteFileAsync(SelectedFile.Id);
+                        await Folders.FindAndDoActionAsync(curFolder, e =>
+                        {
+                            OpenFolder(e);
+                        });
+                    }));
+            }
+        }
+
         private RelayCommand _uploadFileCommand;
         public RelayCommand UploadFileCommand
         {
@@ -121,11 +156,11 @@ namespace InfTehTest.ViewModel
                             case 0: folderId = SelectedFile.Id; break;
                             default: folderId = SelectedFile.FolderId; break;
                         }
-                        var openFolderDialog = new OpenFileDialog();
+                        var openFileDialog = new OpenFileDialog();
                         var folderName = string.Empty;
-                        if (openFolderDialog.ShowDialog() == true)
+                        if (openFileDialog.ShowDialog() == true)
                         {
-                            folderName = openFolderDialog.FileName;
+                            folderName = openFileDialog.FileName;
                         }
                         using StreamReader sr = new StreamReader(folderName);
                         var content = sr.ReadToEnd();
@@ -135,6 +170,7 @@ namespace InfTehTest.ViewModel
                             Content = content,
                             Name = name,
                             FolderId = folderId,
+                            TypeId = 1 //TODO Заменить
                         };
 
                         var curFolder = new TreeViewVM
@@ -143,11 +179,11 @@ namespace InfTehTest.ViewModel
                             TypeId = 0
                         };
 
+                        await _apiService.AddFileAsync(newFile);
                         await Folders.FindAndDoActionAsync(curFolder, e => 
                         {
-                            e.Child.Add(newFile); //TODO проверить работает вообще или нет
+                            OpenFolder(e);
                         });
-                        await _apiService.AddFolderAsync(newFile);
 
                     }));
             }
@@ -160,8 +196,48 @@ namespace InfTehTest.ViewModel
                 return _downloadFileCommand ??
                     (_downloadFileCommand = new RelayCommand(async ()=>
                     {
-
+                        var openFolderDialog = new OpenFolderDialog();
+                        var folderName = string.Empty;
+                        if (openFolderDialog.ShowDialog() == true)
+                        {
+                            folderName = openFolderDialog.FolderName;
+                        }
+                        folderName += "\\" + SelectedFile.Name + ".txt";
+                        using StreamWriter sw = new StreamWriter(folderName);
+                        sw.WriteLine(SelectedFile.Content);
+                        MessageBox.Show($"Файл сохранен в {folderName}");
                     }));
+            }
+        }
+        private RelayCommand _renameCommand;
+        public RelayCommand RenameCommand
+        {
+            get
+            {
+                return _renameCommand ??
+                    (_renameCommand = new RelayCommand(async () =>
+                    {
+                        var newName = "Новое имя";
+                        SelectedFile.Name = newName;
+                        await _apiService.UpdateFileAsync(SelectedFile);
+                        int folderId;
+
+                        switch (SelectedFile.TypeId)
+                        {
+                            case 0: folderId = SelectedFile.Id; break;
+                            default: folderId = SelectedFile.FolderId; break;
+                        }
+                        var curFolder = new TreeViewVM
+                        {
+                            Id = folderId,
+                            TypeId = 0
+                        };
+                        await Folders.FindAndDoActionAsync(curFolder, e =>
+                        {
+                            OpenFolder(e);
+                        });
+                    }
+                    ));
             }
         }
 
@@ -183,8 +259,7 @@ namespace InfTehTest.ViewModel
                     default:
                         var fileContent = await _apiService.GetFileContentAsync(tvvm.Id);
                         tvvm.Content = fileContent.Content;
-                        OpenTabs.Add(tvvm);
-                        SelectedFile = tvvm; 
+                        OpenTabs.Add(tvvm); 
                         break;
                 }
                 OnPropertyChanged();

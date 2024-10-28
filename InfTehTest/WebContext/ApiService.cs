@@ -10,6 +10,7 @@ using System.Net.Http.Headers;
 using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Controls;
 
 namespace InfTehTest.WebContext
 {
@@ -38,29 +39,45 @@ namespace InfTehTest.WebContext
 
         public async Task DeleteFolderAsync(int folderId)
         {
-            var endPoint = $"/api/Folder/DeleteFolder/folder/{folderId}";
+            var endPoint = $"api/Folder/DeleteFolder/{folderId}";
+            var response = await SendRequestAsync(HttpMethod.Delete, endPoint, null, null);
+        }
+
+        public async Task DeleteFileAsync(int fileId)
+        {
+            var endPoint = $"api/Folder/DeleteFile/{fileId}";
             var response = await SendRequestAsync(HttpMethod.Delete, endPoint, null, null);
         }
 
 
-        public async Task AddFolderAsync(TreeViewVM folder)
+        public async Task<TreeViewVM> AddFolderAsync(TreeViewVM folder)
         {
-            var endPoint = $"/api/Folder/AddFolder/folder{folder}";
-            var response = await SendRequestAsync(HttpMethod.Delete, endPoint, null, null);
+            var endPoint = $"api/Folder/AddFolder";
+            var content = JsonConvert.SerializeObject(folder);
+            var response = await SendRequestAsync(HttpMethod.Post, endPoint, content, null);
+            return JsonConvert.DeserializeObject<TreeViewVM>(response);
         }
 
         public async Task UpdateFolderAsync(TreeViewVM folder)
         {
-            var endPoint = $"/api/Folder/AddFolder";
+            var endPoint = $"api/Folder/UpdateFolder/{folder.Id}";
             var content = JsonConvert.SerializeObject(folder);
-            var response = await SendRequestAsync(HttpMethod.Delete, endPoint, content, null);
+            var response = await SendRequestAsync(HttpMethod.Put, endPoint, content, null);
         }
 
-        public async Task AddFileAsync(TreeViewVM file)
+        public async Task UpdateFileAsync(TreeViewVM file)
         {
-            var endPoint = $"/api/Folder/AddFile";
+            var endPoint = $"api/Folder/UpdateFile/{file.Id}";
+            var content = JsonConvert.SerializeObject(file);
+            var response = await SendRequestAsync(HttpMethod.Put, endPoint, content, null);
+        }
+
+        public async Task<TreeViewVM> AddFileAsync(TreeViewVM file)
+        {
+            var endPoint = $"api/Folder/AddFile";
             var content = JsonConvert.SerializeObject(file);
             var response = await SendRequestAsync(HttpMethod.Post, endPoint, content, null);
+            return JsonConvert.DeserializeObject<TreeViewVM>(response);
         }
 
 
@@ -81,7 +98,7 @@ namespace InfTehTest.WebContext
                 }
             }
 
-            if (method == HttpMethod.Post)
+            if (method == HttpMethod.Post || method == HttpMethod.Put)
             {
                 request.Content = new StringContent(content)
                 {
@@ -91,6 +108,7 @@ namespace InfTehTest.WebContext
 
             using (var response = await _httpClient.SendAsync(request))
             {
+                response.EnsureSuccessStatusCode();
                 body = await response.Content.ReadAsStringAsync();
             }
 
@@ -105,6 +123,24 @@ namespace InfTehTest.WebContext
         public Task<List<FolderFileViewModel>> GetFilesAsync(int folderId)
         {
             throw new NotImplementedException();
+        }
+        private bool disposed = false;
+        public virtual void Dispose(bool disposing)
+        {
+            if (!this.disposed)
+            {
+                if (disposing)
+                {
+                    _httpClient.Dispose();
+                }
+            }
+            this.disposed = true;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 
