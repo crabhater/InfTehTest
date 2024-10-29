@@ -6,8 +6,14 @@
         xmlns:local="clr-namespace:InfTehTest.ViewModel" d:DataContext="{d:DesignInstance Type=local:MainViewModel}"
         mc:Ignorable="d"
         Title="Explorer" Height="450" Width="800">
-   
 
+    <Window.Resources>
+
+
+
+
+
+    </Window.Resources>
 
         <Grid>
         <Grid.ColumnDefinitions>
@@ -23,18 +29,33 @@
             <Button Content="Удалить папку" Margin="5,5,0,0" Command="{Binding RemoveFolderCommand}"/>
             <Button Content="Загрузить файл" Margin="5,5,0,0" Command="{Binding UploadFileCommand}"/>
             <Button Content="Скачать файл" Margin="5,5,0,0" Command="{Binding DownloadFileCommand}"/>
-            <Button Content="Удалить файл" Margin="5,5,0,0" Command="{Binding RemoveFileCommand}"/> 
-            <Button Content="Переименовать" Margin="5,5,0,0" Command="{Binding RenameCommand}"/>
+            <Button Content="Удалить файл" Margin="5,5,0,0" Command="{Binding RemoveFileCommand}"/>
+            <Button Content="Переименовать" Margin="5,5,0,0" Command="{Binding StartEditCommand}"/>
         </StackPanel>
-        <TreeView Grid.Column="0" Grid.Row="1" Margin="10" ItemsSource="{Binding Folders}">
-            <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate DataType="x:Type model:TreeViewVM" ItemsSource="{Binding  Child}">
-                    <StackPanel Orientation="Horizontal">
-                        <Image Source="{Binding Icon}" Height="20" Width="20"/>
-                        <TextBlock Text="{Binding Name}" ToolTip="{Binding Description}"/>
+        <TreeView Grid.Column="0" Grid.Row="1" Margin="10" ItemsSource="{Binding Folders}" >
+            <TreeView.Resources>
+                <HierarchicalDataTemplate DataType="{x:Type local:FolderViewModel}" ItemsSource="{Binding Child}">
+                    <StackPanel Orientation="Horizontal" Margin="0 0 0 3">
+                        <Viewbox Width="18" Height="18">
+                            <Canvas Width="24" Height="24">
+                                <Path Fill="Black" Data="M6.1,10L4,18V8H21A2,2 0 0,0 19,6H12L10,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H19C19.9,20 20.7,19.4 20.9,18.5L23.2,10H6.1M19,18H6L7.6,12H20.6L19,18Z" />
+                            </Canvas>
+                        </Viewbox>
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" Margin="3 0 0 0" Visibility="{Binding TextBlockVisibility}"/>
+                        <TextBox Text="{Binding Name}" Visibility="{Binding TextBoxVisibility}" LostFocus="TextBox_LostFocus" KeyDown="TextBox_KeyDown"/>
                     </StackPanel>
                 </HierarchicalDataTemplate>
-            </TreeView.ItemTemplate>
+                <DataTemplate DataType="{x:Type local:FolderFileViewModel}">
+                    <StackPanel Orientation="Horizontal">
+                        <Canvas Width="24" Height="24">
+                            <Path Fill="Black" Data="{Binding Icon}" />
+                        </Canvas>
+                        <TextBlock Text="{Binding FullName}" ToolTip="{Binding Description}" Visibility="{Binding TextBlockVisibility}"/>
+                        <TextBox Text="{Binding Name}" Visibility="{Binding TextBoxVisibility}" LostFocus="TextBox_LostFocus" KeyDown="TextBox_KeyDown"/>
+                    </StackPanel>
+                </DataTemplate>
+                
+            </TreeView.Resources>
             <TreeView.ItemContainerStyle>
                 <Style TargetType="TreeViewItem">
                     <EventSetter Event="Selected" Handler="TreeViewItem_Selected"/>
@@ -42,7 +63,7 @@
                 </Style>
             </TreeView.ItemContainerStyle>
         </TreeView>
-        <TabControl Grid.Column="1" Grid.Row="1" Margin="10" ItemsSource="{Binding OpenTabs}" SelectedItem="{Binding SelectedFile}">
+        <TabControl Grid.Column="1" Grid.Row="1" Margin="10" ItemsSource="{Binding OpenTabs}" SelectedItem="{Binding SelectedItem}">
             <TabControl.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Name}" MaxWidth="100"/>
@@ -50,7 +71,9 @@
             </TabControl.ItemTemplate>
             <TabControl.ContentTemplate>
                 <DataTemplate>
-                    <TextBox Text="{Binding Content}" Margin="5"/>
+                    <ScrollViewer>
+                        <TextBox Text="{Binding Content}" Margin="5"/>
+                    </ScrollViewer>
                 </DataTemplate>
             </TabControl.ContentTemplate>
             

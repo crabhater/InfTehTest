@@ -1,4 +1,5 @@
 ﻿using InfTehTest.Command;
+using InfTehTest.DataContext;
 using InfTehTest.Extensions;
 using InfTehTest.InterfacesLib;
 using InfTehTest.WebContext;
@@ -10,10 +11,12 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace InfTehTest.ViewModel
@@ -21,17 +24,18 @@ namespace InfTehTest.ViewModel
     public class MainViewModel : INotifyPropertyChanged
     {
         private readonly IApiService _apiService;
-        private ObservableCollection<TreeViewVM> _folders;
-        public ObservableCollection<TreeViewVM> Folders { get { return _folders; } set{ _folders = value; OnPropertyChanged(); } }
-        public ObservableCollection<TreeViewVM> OpenTabs { get; set; }
-
-        private TreeViewVM _selectedFile;
-        public TreeViewVM SelectedFile
+        private readonly IRepository<FolderViewModel> _folderRepository;
+        private readonly IRepository<FolderFileViewModel> _fileRepository;
+        private ObservableCollection<IBaseVM> _folders;
+        public ObservableCollection<IBaseVM> Folders { get { return _folders; } set{ _folders = value; OnPropertyChanged(); } }
+        public ObservableCollection<IBaseVM> OpenTabs { get; set; }
+        private IBaseVM _selectedItem;
+        public IBaseVM SelectedItem
         {
-            get { return _selectedFile; }
+            get { return _selectedItem; }
             set
             {
-                _selectedFile = value;
+                _selectedItem = value;
                 OnPropertyChanged();
             }
         }
@@ -39,11 +43,14 @@ namespace InfTehTest.ViewModel
         public MainViewModel()
         {
             var httpClient = new HttpClient();
-            _apiService = new ApiService(httpClient);
-            OpenTabs = new ObservableCollection<TreeViewVM>();
+            var apiService = new ApiService(httpClient);
+            _apiService = apiService;
+            _folderRepository = new FolderApiRepository(apiService);
+            _fileRepository = new FileApiRepository(apiService);
+            OpenTabs = new ObservableCollection<IBaseVM>();
             LoadData();
-
         }
+
         private RelayCommand _createFolderCommand;
         public RelayCommand CreateFolderCommand 
         { 
@@ -52,33 +59,27 @@ namespace InfTehTest.ViewModel
                 return _createFolderCommand ??
                     (_createFolderCommand = new RelayCommand(async () =>
                     {
-                        int folderId;
-                        switch (SelectedFile.TypeId)
+                        if(SelectedItem == null || SelectedItem.GetType() != typeof(FolderViewModel))
                         {
-                            case 0: folderId = SelectedFile.Id; break;
-                            default: folderId = SelectedFile.FolderId; break;
+                            MessageBox.Show("Выбери папку куда будем сохранять");
+                            return;
                         }
 
-                        var curFolder = new TreeViewVM
+                        var newFolder = new FolderViewModel()
                         {
-                            Id = folderId,
-                            TypeId = 0
-                        };
-
-                        var newFolder = new TreeViewVM
-                        {
-                            FolderId = folderId,
+                            FolderId = SelectedItem.Id,
                             Name = "Новая папка",
-                            TypeId = 0,
-                            Icon = "\\folder.png"
+                            Icon = "",
+                            Child = new ObservableCollection<IBaseVM>(),
                         };
-                        await _apiService.AddFolderAsync(newFolder);
-
-                        await Folders.FindAndDoActionAsync(curFolder, (e =>
-                        {
-                            OpenFolder(e);
-                        }));
                         
+                        
+                        await _folderRepository.CreateAsync(newFolder);
+                        //await _folderRepository.GetAsync((FolderViewModel)SelectedItem);
+                        await Folders.FindAndDoActionAsync(SelectedItem, async e =>
+                        {
+                            OpenFolder((FolderViewModel)e);
+                        });
                     }));
             }
         }
@@ -90,23 +91,19 @@ namespace InfTehTest.ViewModel
                 return _removeFolderCommand ??
                     (_removeFolderCommand = new RelayCommand(async () =>
                     {
-                        int folderId;
-                        switch (SelectedFile.TypeId)
+                        if (SelectedItem == null || SelectedItem.GetType() != typeof(FolderViewModel))
                         {
-                            case 0: folderId = SelectedFile.Id; break;
-                            default: folderId = SelectedFile.FolderId; break;
+                            MessageBox.Show("Выбери папку для удаления");
                         }
 
-                        var curFolder = new TreeViewVM
+                        var curFolder = new FolderViewModel()
                         {
-                            Id = folderId,
-                            TypeId = 0
+                            Id = (int)SelectedItem.FolderId,
                         };
-
-                        await _apiService.DeleteFolderAsync(folderId);
-                        await Folders.FindAndDoActionAsync(curFolder, e =>
+                        await _folderRepository.DeleteAsync((FolderViewModel)SelectedItem);
+                        await Folders.FindAndDoActionAsync(curFolder, async e =>
                         {
-                            OpenFolder(e);
+                            OpenFolder((FolderViewModel)e);
                         });
                     }));
             }
@@ -117,27 +114,26 @@ namespace InfTehTest.ViewModel
         {
             get
             {
+
                 return _removeFileCommand ??
                     (_removeFileCommand = new RelayCommand(async () =>
                     {
-                        int folderId;
-                        switch (SelectedFile.TypeId)
+                        if (SelectedItem == null && SelectedItem.GetType() != typeof(FolderFileViewModel))
                         {
-                            case 0: return;
-                            default: folderId = SelectedFile.FolderId; break;
+                            MessageBox.Show("Выбери файл для удаления");
                         }
 
-                        var curFolder = new TreeViewVM
+                        var curFolder = new FolderViewModel
                         {
-                            Id = folderId,
-                            TypeId = 0
+                            Id = (int)SelectedItem.FolderId,
                         };
 
-                        await _apiService.DeleteFileAsync(SelectedFile.Id);
-                        await Folders.FindAndDoActionAsync(curFolder, e =>
+                        await _fileRepository.DeleteAsync((FolderFileViewModel)SelectedItem);
+                        await Folders.FindAndDoActionAsync(curFolder, async e =>
                         {
-                            OpenFolder(e);
+                            OpenFolder((FolderViewModel)e);
                         });
+                        OpenTabs.Remove(SelectedItem);
                     }));
             }
         }
@@ -150,12 +146,12 @@ namespace InfTehTest.ViewModel
                 return _uploadFileCommand ??
                     (_uploadFileCommand = new RelayCommand(async () =>
                     {
-                        int folderId;
-                        switch (SelectedFile.TypeId)
+                        if (SelectedItem == null || SelectedItem.GetType() != typeof(FolderViewModel))
                         {
-                            case 0: folderId = SelectedFile.Id; break;
-                            default: folderId = SelectedFile.FolderId; break;
+                            MessageBox.Show("Выбери папку куда будем наш файл грузить");
+                            return;
                         }
+                        
                         var openFileDialog = new OpenFileDialog();
                         var folderName = string.Empty;
                         if (openFileDialog.ShowDialog() == true)
@@ -164,25 +160,22 @@ namespace InfTehTest.ViewModel
                         }
                         using StreamReader sr = new StreamReader(folderName);
                         var content = sr.ReadToEnd();
-                        var name = Path.GetFileNameWithoutExtension(content);
-                        var newFile = new TreeViewVM
+                        var name = Path.GetFileNameWithoutExtension(folderName);
+                        var fileType = Path.GetExtension(folderName).Trim('.');
+                        var newFile = new FolderFileViewModel
                         {
                             Content = content,
                             Name = name,
-                            FolderId = folderId,
-                            TypeId = 1 //TODO Заменить
+                            FolderId = SelectedItem.Id,
+                            Icon = "",
+                            Description = "",
+                            FileTypeName = fileType
                         };
 
-                        var curFolder = new TreeViewVM
+                        await _fileRepository.CreateAsync(newFile);
+                        await Folders.FindAndDoActionAsync((FolderViewModel)SelectedItem, async e =>
                         {
-                            Id = folderId,
-                            TypeId = 0
-                        };
-
-                        await _apiService.AddFileAsync(newFile);
-                        await Folders.FindAndDoActionAsync(curFolder, e => 
-                        {
-                            OpenFolder(e);
+                            OpenFolder((FolderViewModel)e);
                         });
 
                     }));
@@ -194,88 +187,153 @@ namespace InfTehTest.ViewModel
             get
             {
                 return _downloadFileCommand ??
-                    (_downloadFileCommand = new RelayCommand(async ()=>
+                    (_downloadFileCommand = new RelayCommand(async () =>
                     {
+                        if (_selectedItem == null || _selectedItem.GetType() != typeof(FolderFileViewModel))
+                        {
+                            MessageBox.Show("Выбери файл для скачивания");
+                            return;
+                        }
                         var openFolderDialog = new OpenFolderDialog();
                         var folderName = string.Empty;
                         if (openFolderDialog.ShowDialog() == true)
                         {
                             folderName = openFolderDialog.FolderName;
                         }
-                        folderName += "\\" + SelectedFile.Name + ".txt";
+                        folderName += "\\" + (SelectedItem as FolderFileViewModel).FullName;
                         using StreamWriter sw = new StreamWriter(folderName);
-                        sw.WriteLine(SelectedFile.Content);
+                        await _fileRepository.GetAsync((FolderFileViewModel)SelectedItem);
+                        sw.WriteLine((SelectedItem as FolderFileViewModel).Content);
                         MessageBox.Show($"Файл сохранен в {folderName}");
                     }));
             }
         }
-        private RelayCommand _renameCommand;
-        public RelayCommand RenameCommand
+        private RelayCommand _startEditCommand;
+        public RelayCommand StartEditCommand
         {
             get
             {
-                return _renameCommand ??
-                    (_renameCommand = new RelayCommand(async () =>
+                return _startEditCommand ??
+                    (_startEditCommand = new RelayCommand(async () =>
                     {
-                        var newName = "Новое имя";
-                        SelectedFile.Name = newName;
-                        await _apiService.UpdateFileAsync(SelectedFile);
-                        int folderId;
-
-                        switch (SelectedFile.TypeId)
+                        if (SelectedItem == null)
                         {
-                            case 0: folderId = SelectedFile.Id; break;
-                            default: folderId = SelectedFile.FolderId; break;
+                            MessageBox.Show("Выбери файл или папку");
+                            return;
                         }
-                        var curFolder = new TreeViewVM
-                        {
-                            Id = folderId,
-                            TypeId = 0
-                        };
-                        await Folders.FindAndDoActionAsync(curFolder, e =>
-                        {
-                            OpenFolder(e);
-                        });
+                        SelectedItem.EnableEdit();
                     }
                     ));
             }
         }
 
+        public async Task EndEdit(string newName)
+        {
+            SelectedItem.DisableEdit();
+            if (string.IsNullOrEmpty(newName))
+            {
+                MessageBox.Show("Недопустимое имя");
+                await DropEdit();
+                return;
+            }
+            int folderId = 0;
+
+            if(SelectedItem.GetType() == typeof(FolderFileViewModel))
+            {
+                await _fileRepository.GetAsync((FolderFileViewModel)SelectedItem);
+                SelectedItem.Name = newName;
+                await _fileRepository.UpdateAsync((FolderFileViewModel)SelectedItem);
+                folderId = (int)SelectedItem.FolderId;
+            }
+
+            if(SelectedItem.GetType() == typeof(FolderViewModel))
+            {
+                await _folderRepository.GetAsync((FolderViewModel)SelectedItem);
+                SelectedItem.Name = newName;
+                await _folderRepository.UpdateAsync((FolderViewModel)SelectedItem);
+                folderId = SelectedItem.Id;
+            }
+
+
+            
+            var curFolder = new FolderViewModel
+            {
+                Id = (int)SelectedItem.FolderId,
+            };
+            await Folders.FindAndDoActionAsync(curFolder, async e =>
+            {
+                OpenFolder((FolderViewModel)e);
+            });
+            OnPropertyChanged();
+        }
+
+        public async Task DropEdit()
+        {
+            SelectedItem.DisableEdit();
+            
+            var curFolder = new FolderViewModel
+            {
+                Id = SelectedItem.Id,
+            };
+            await Folders.FindAndDoActionAsync(curFolder, async e =>
+            {
+                OpenFolder((FolderViewModel)e);
+            });
+        }
+
         public async void LoadData()
         {
-            var folder = await _apiService.GetFolderContentAsync(1);
-            Folders = folder.Child;
+            var stub = new FolderViewModel()
+            {
+                Id = 1
+            };
+            var content = await _folderRepository.GetAsync(stub);
+            Folders = content.Child;
         }
 
-        public async void OpenFolder(TreeViewVM tvvm)
+        public async void OpenFolder()
         {
-            if(tvvm != null)
+            if(SelectedItem.GetType() == typeof(FolderViewModel))
             {
-                switch (tvvm.TypeId)
+                await Folders.FindAndDoActionAsync((FolderViewModel)SelectedItem, async e =>
                 {
-                    case 0:
-                        var folderChild = await _apiService.GetFolderContentAsync(tvvm.Id);
-                        tvvm.Child = folderChild.Child; break;
-                    default:
-                        var fileContent = await _apiService.GetFileContentAsync(tvvm.Id);
-                        tvvm.Content = fileContent.Content;
-                        OpenTabs.Add(tvvm); 
-                        break;
-                }
-                OnPropertyChanged();
+                    OpenFolder((FolderViewModel)e);
+                });
             }
+            if(SelectedItem.GetType() == typeof(FolderFileViewModel))
+            {
+                var curFolder = new FolderViewModel()
+                {
+                    Id = (int)SelectedItem.FolderId
+                };
+                await Folders.FindAndDoActionAsync(SelectedItem, async e =>
+                {
+                    OpenFile((FolderFileViewModel)e);
+                });
+            }
+
         }
 
-        public async void OpenFile(FolderFileViewModel file)
+        private async void OpenFolder(FolderViewModel item)
         {
-            if (file != null && !OpenTabs.Contains(file))
-            {
-                var fileContent = await _apiService.GetFileContentAsync(file.Id);
-                file.Content = fileContent.Content;
-                OpenTabs.Add(file);
-            }
-            SelectedFile = file;
+            var folderChild = await _folderRepository.GetAsync(item);
+            item.Child = folderChild.Child;
+            //tvvm.ad = folderChild.Files;
+            OnPropertyChanged();
         }
+
+        private async void OpenFile(FolderFileViewModel item)
+        {
+            var file = await _fileRepository.GetAsync(item);
+            item.Content = file.Content;
+            if (!OpenTabs.Contains(item))
+            {
+                OpenTabs.Add(item);
+            }
+            SelectedItem = item;
+            OnPropertyChanged();
+        }
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string name = null)

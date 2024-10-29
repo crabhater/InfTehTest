@@ -14,14 +14,15 @@ namespace InfTehTest.InterfacesLib
     {
         Task<List<FolderViewModel>> GetFoldersAsync(int parentFolderId);
         Task<List<FolderFileViewModel>> GetFilesAsync(int folderId);
-        Task<TreeViewVM> GetFileContentAsync(int fileId);
-        Task<TreeViewVM> GetFolderContentAsync(int folderId);
+        Task<FolderFileViewModel> GetFileContentAsync(int fileId);
+        Task<List<IBaseVM>> GetFolderFilesAsync(int folderId);
+        Task<List<IBaseVM>> GetFolderFoldersAsync(int folderId);
         Task DeleteFolderAsync(int folderId);
         Task DeleteFileAsync(int fileId);
-        Task<TreeViewVM> AddFolderAsync(TreeViewVM folder);
-        Task<TreeViewVM> AddFileAsync(TreeViewVM file);
-        Task UpdateFolderAsync(TreeViewVM folder);
-        Task UpdateFileAsync(TreeViewVM file);
+        Task AddFolderAsync(FolderViewModel folder);
+        Task AddFileAsync(FolderFileViewModel file);
+        Task UpdateFolderAsync(FolderViewModel folder);
+        Task UpdateFileAsync(FolderFileViewModel file);
 
     }
 }

@@ -35,21 +35,9 @@ namespace InfTehTest
             if (originalSource?.DataContext == null || !originalSource.DataContext.Equals(((TreeViewItem)sender).DataContext))
                 return;
 
-            if (sender is TreeViewItem item && item.DataContext is TreeViewVM tvvm)
+            if (sender is TreeViewItem item && item.DataContext is IBaseVM tvvm)
             {
-                _viewModel.OpenFolder(tvvm);
-            }
-        }
-
-        private void TreeViewItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            var originalSource = e.OriginalSource as FrameworkElement;
-            if (originalSource?.DataContext == null || !originalSource.DataContext.Equals(((TreeViewItem)sender).DataContext))
-                return;
-
-            if (sender is TreeViewItem item && item.DataContext is TreeViewVM tvvm)
-            {
-                _viewModel.SelectedFile = tvvm;
+                _viewModel.OpenFolder();
             }
         }
 
@@ -59,19 +47,45 @@ namespace InfTehTest
             if (originalSource?.DataContext == null || !originalSource.DataContext.Equals(((TreeViewItem)sender).DataContext))
                 return;
 
-            if (sender is TreeViewItem item && item.DataContext is TreeViewVM tvvm)
+            if (sender is TreeViewItem item && item.DataContext is IBaseVM tvvm)
             {
-                _viewModel.SelectedFile = tvvm;
+                _viewModel.SelectedItem = tvvm;
             }
         }
 
-        //private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
-        //{
-        //    if (sender is TreeViewItem item && item.DataContext is FolderViewModel folder)
-        //    {
-        //        folder.LoadSubFoldersCommand.Execute(null);
-        //    }
-        //}
+        private async void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var originalSource = e.OriginalSource as FrameworkElement;
+            if (originalSource?.DataContext == null || !originalSource.DataContext.Equals(((TextBox)sender).DataContext))
+                return;
+
+            if (sender is TextBox item && item.Visibility != Visibility.Collapsed)
+            {
+                await _viewModel.EndEdit(item.Text);
+            }
+        }
+
+        private async void TextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            var originalSource = e.OriginalSource as FrameworkElement;
+            if (originalSource?.DataContext == null || !originalSource.DataContext.Equals(((TextBox)sender).DataContext))
+                return;
+
+            if (sender is TextBox item && item.Visibility != Visibility.Collapsed)
+            {
+                if (e.Key == Key.Enter)
+                {
+                    await _viewModel.EndEdit(item.Text);
+                    e.Handled = true;
+                }
+                if (e.Key == Key.Escape)
+                {
+                    await _viewModel.DropEdit();
+                    e.Handled = true;
+                }
+
+            }
+        }
 
     }
 }

@@ -1,46 +1,49 @@
 ﻿using InfTehTest.InterfacesLib;
+using InfTehTest.ViewModel;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace InfTehTest.DataContext
 {
-    public class FoldersRepository : IRepository<TreeViewVM>
+    public class FileApiRepository : IRepository<FolderFileViewModel>
     {
         private IApiService _apiService;
-        public Task CreateAsync(TreeViewVM item)
+        public FileApiRepository(IApiService apiService)
+        {
+            _apiService = apiService;
+        }
+        public async Task CreateAsync(FolderFileViewModel item)
+        {
+            await _apiService.AddFileAsync(item);
+        }
+
+        public async Task DeleteAsync(FolderFileViewModel item)
+        {
+            await _apiService.DeleteFileAsync(item.Id);
+        }
+
+
+        public async Task<FolderFileViewModel> GetAsync(FolderFileViewModel item)
+        {
+            return await _apiService.GetFileContentAsync(item.Id);
+        }
+
+        public Task<ObservableCollection<FolderFileViewModel>> GetList()
         {
             throw new NotImplementedException();
         }
 
-        public Task DeleteAsync(TreeViewVM item)
+        public async Task UpdateAsync(FolderFileViewModel item)
         {
-            throw new NotImplementedException();
+            await _apiService.UpdateFileAsync(item);
         }
 
-
-        public Task<TreeViewVM> GetAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ICollection<TreeViewVM>> GetList(Func<TreeViewVM, bool> func)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SaveAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UpdateAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
         private bool disposed = false;
+
         public virtual void Dispose(bool disposing)
         {
             if (!this.disposed)
@@ -52,6 +55,7 @@ namespace InfTehTest.DataContext
             }
             this.disposed = true;
         }
+
         public void Dispose()
         {
             Dispose(true);

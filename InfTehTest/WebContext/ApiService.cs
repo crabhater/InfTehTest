@@ -23,19 +23,40 @@ namespace InfTehTest.WebContext
             _httpClient = httpClient;
         }
 
-        public async Task<TreeViewVM> GetFolderContentAsync(int folderId)
+        public async Task<List<IBaseVM>> GetFolderFilesAsync(int folderId)
         {
-            var endPoint = $"api/Folder/GetFolderContent/{folderId}";
+            var endPoint = $"api/Folder/GetFolderFiles/{folderId}";
             var response = await SendRequestAsync(HttpMethod.Get, endPoint, null, null);
-            return JsonConvert.DeserializeObject<TreeViewVM>(response);
+            var result = JsonConvert.DeserializeObject<List<FolderFileViewModel>>(response);
+            var list = new List<IBaseVM>();
+            foreach (var res in result)
+            {
+                list.Add(res);
+            }
+            return list;
         }
 
-        public async Task<TreeViewVM> GetFileContentAsync(int fileId)
+        public async Task<List<IBaseVM>>GetFolderFoldersAsync(int folderId)
+        {
+            var endPoint = $"api/Folder/GetFolderFolders/{folderId}";
+            var response = await SendRequestAsync(HttpMethod.Get, endPoint, null, null);
+            var result = JsonConvert.DeserializeObject<List<FolderViewModel>>(response);
+            var list = new List<IBaseVM>();
+            foreach(var res in result)
+            {
+                list.Add(res);
+            }
+            return list;
+        }
+
+        public async Task<FolderFileViewModel> GetFileContentAsync(int fileId)
         {
             var endPoint = $"api/Folder/GetFileContent/{fileId}";
             var response = await SendRequestAsync(HttpMethod.Get, endPoint, null, null);
-            return JsonConvert.DeserializeObject<TreeViewVM>(response);
+            return JsonConvert.DeserializeObject<FolderFileViewModel>(response);
         }
+
+
 
         public async Task DeleteFolderAsync(int folderId)
         {
@@ -50,34 +71,32 @@ namespace InfTehTest.WebContext
         }
 
 
-        public async Task<TreeViewVM> AddFolderAsync(TreeViewVM folder)
+        public async Task AddFolderAsync(FolderViewModel folder)
         {
             var endPoint = $"api/Folder/AddFolder";
             var content = JsonConvert.SerializeObject(folder);
             var response = await SendRequestAsync(HttpMethod.Post, endPoint, content, null);
-            return JsonConvert.DeserializeObject<TreeViewVM>(response);
         }
 
-        public async Task UpdateFolderAsync(TreeViewVM folder)
+        public async Task UpdateFolderAsync(FolderViewModel folder)
         {
-            var endPoint = $"api/Folder/UpdateFolder/{folder.Id}";
+            var endPoint = $"api/Folder/UpdateFolder";
             var content = JsonConvert.SerializeObject(folder);
             var response = await SendRequestAsync(HttpMethod.Put, endPoint, content, null);
         }
 
-        public async Task UpdateFileAsync(TreeViewVM file)
+        public async Task UpdateFileAsync(FolderFileViewModel file)
         {
-            var endPoint = $"api/Folder/UpdateFile/{file.Id}";
+            var endPoint = $"api/Folder/UpdateFile";
             var content = JsonConvert.SerializeObject(file);
             var response = await SendRequestAsync(HttpMethod.Put, endPoint, content, null);
         }
 
-        public async Task<TreeViewVM> AddFileAsync(TreeViewVM file)
+        public async Task AddFileAsync(FolderFileViewModel file)
         {
             var endPoint = $"api/Folder/AddFile";
             var content = JsonConvert.SerializeObject(file);
             var response = await SendRequestAsync(HttpMethod.Post, endPoint, content, null);
-            return JsonConvert.DeserializeObject<TreeViewVM>(response);
         }
 
 
